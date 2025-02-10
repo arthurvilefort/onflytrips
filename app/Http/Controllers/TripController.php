@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Trip;
+use App\Http\Requests\TripFilterRequest;
 
 class TripController extends Controller
 {
@@ -50,24 +51,26 @@ class TripController extends Controller
         return response()->json($trip);
     }
 
-    public function index(Request $request)
+    public function index(TripFilterRequest $request)
     {
-        $query = Trip::where('user_id', auth()->id());
+        $query = Trip::query()->where('user_id', auth()->id());
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->destination) {
+            $query->where('destination', 'LIKE', '%' . $request->destination . '%');
         }
 
-        if ($request->has('destination')) {
-            $query->where('destination', 'like', "%{$request->destination}%");
-        }
-
-        if ($request->has(['start_date', 'end_date'])) {
+        if ($request->start_date && $request->end_date) {
             $query->whereBetween('departure_date', [$request->start_date, $request->end_date]);
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
         }
 
         return response()->json($query->get());
     }
+
+
 
     public function cancel($id)
     {
