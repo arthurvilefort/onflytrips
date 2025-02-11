@@ -1,204 +1,243 @@
-# **OnFlyTrips - API de Pedidos de Viagem**
+OnFlyTrips - API de Pedidos de Viagem 🚀
+📌 Descrição
+OnFlyTrips é um microsserviço desenvolvido em Laravel para gerenciar pedidos de viagens corporativas. A API segue boas práticas de arquitetura de microsserviços e inclui:
 
-## 📌 **Descrição**
+✅ Autenticação JWT
+✅ Criação e gerenciamento de pedidos de viagem
+✅ Validações e regras de negócios para cancelamento e aprovação
+✅ Notificações via banco de dados e e-mail
+✅ Testes automatizados com PHPUnit
+✅ Execução via Docker
 
-Este projeto é um microsserviço desenvolvido em **Laravel** para gerenciar pedidos de viagens corporativas. A API segue as boas práticas de arquitetura de microsserviços e inclui autenticação JWT, validação de dados, filtros avançados e notificações.
-
----
-
-## 📌 **Instalação**
-
-### **1️⃣ Clonar o Repositório**
-
-```sh
+📌 Instalação
+1️⃣ Clonar o Repositório
+sh
+Copiar
+Editar
 git clone https://github.com/seu-usuario/onflytrips.git
 cd onflytrips
-```
-
-### **2️⃣ Instalar Dependências**
-
-```sh
+2️⃣ Instalar Dependências
+sh
+Copiar
+Editar
 composer install
 npm install
-```
+3️⃣ Configurar o Ambiente
+Crie o arquivo .env e configure as credenciais do banco de dados:
 
-### **3️⃣ Configurar o Ambiente**
-
-Crie o arquivo `.env` e configure as credenciais do banco de dados:
-
-```sh
+sh
+Copiar
+Editar
 cp .env.example .env
-```
+Edite as seguintes variáveis no .env:
 
-Edite as seguintes variáveis no `.env`:
-
-```ini
+ini
+Copiar
+Editar
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=onflytrips
 DB_USERNAME=root
 DB_PASSWORD=
-```
+Adicione a configuração para envio de e-mails:
 
-### **4️⃣ Gerar a Chave da Aplicação**
-
-```sh
+ini
+Copiar
+Editar
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=seu_usuario
+MAIL_PASSWORD=sua_senha
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS=onflytrips@example.com
+MAIL_FROM_NAME="OnFlyTrips"
+4️⃣ Gerar a Chave da Aplicação
+sh
+Copiar
+Editar
 php artisan key:generate
-```
-
-### **5️⃣ Criar as Tabelas no Banco de Dados**
-
-```sh
-php artisan migrate
-```
-
-### **6️⃣ Iniciar o Servidor**
-
-```sh
+5️⃣ Criar as Tabelas no Banco de Dados
+sh
+Copiar
+Editar
+php artisan migrate --seed
+6️⃣ Iniciar o Servidor
+sh
+Copiar
+Editar
 php artisan serve
-```
+A API estará disponível em http://localhost:8000.
 
-A API estará disponível em `http://localhost:8000`
+📌 Autenticação (JWT)
+A API usa autenticação JWT para proteger as rotas. Utilize o token retornado ao fazer login para acessar as rotas protegidas.
 
----
+1️⃣ Registrar Usuário
+POST /api/register
 
-## 📌 **Autenticação (JWT)**
-
-A API usa autenticação JWT para proteger as rotas. Utilize o **token** retornado ao fazer login para acessar as rotas protegidas.
-
-### **1️⃣ Registrar Usuário**
-
-**POST** `/api/register`
-
-```json
+json
+Copiar
+Editar
 {
   "name": "Arthur Vilefort",
   "email": "arthur@example.com",
-  "password": "123456"
+  "password": "123456",
+  "password_confirmation": "123456"
 }
-```
+2️⃣ Login
+POST /api/login
 
-### **2️⃣ Login**
-
-**POST** `/api/login`
-
-```json
+json
+Copiar
+Editar
 {
   "email": "arthur@example.com",
   "password": "123456"
 }
-```
+Resposta:
 
-### **3️⃣ Visualizar Perfil**
+json
+Copiar
+Editar
+{
+  "token": "seu_token_aqui"
+}
+3️⃣ Visualizar Perfil
+GET /api/profile
+Headers:
 
-**GET** `/api/profile` **Headers:**
-
-```
+makefile
+Copiar
+Editar
 Authorization: Bearer SEU_TOKEN_AQUI
-```
+4️⃣ Logout
+POST /api/logout
+Headers:
 
-### **4️⃣ Logout**
-
-**POST** `/api/logout` **Headers:**
-
-```
+makefile
+Copiar
+Editar
 Authorization: Bearer SEU_TOKEN_AQUI
-```
+📌 Gerenciamento de Usuários (Admins)
+1️⃣ Promover Usuário a Admin
+PUT /api/users/{id}/make-admin
+Headers:
 
----
+pgsql
+Copiar
+Editar
+Authorization: Bearer SEU_TOKEN_AQUI (de um admin)
+2️⃣ Remover Permissão de Admin
+PUT /api/users/{id}/remove-admin
+Headers:
 
-## 📌 **Pedidos de Viagem**
+pgsql
+Copiar
+Editar
+Authorization: Bearer SEU_TOKEN_AQUI (de um admin)
+📌 Pedidos de Viagem
+1️⃣ Criar Pedido de Viagem
+POST /api/trips
+Headers:
 
-### **1️⃣ Criar Pedido de Viagem**
-
-**POST** `/api/trips` **Headers:**
-
-```
+makefile
+Copiar
+Editar
 Authorization: Bearer SEU_TOKEN_AQUI
-```
+Body:
 
-**Body:**
-
-```json
+json
+Copiar
+Editar
 {
   "destination": "Lisboa, Portugal",
   "departure_date": "2025-03-15",
   "return_date": "2025-03-22"
 }
-```
+2️⃣ Listar Todos os Pedidos
+GET /api/trips
+🔹 Admins podem ver todos os pedidos.
+🔹 Usuários comuns só veem os seus próprios.
 
-### **2️⃣ Listar Todos os Pedidos**
+3️⃣ Consultar Pedido por ID
+GET /api/trips/{id}
 
-**GET** `/api/trips`
+4️⃣ Atualizar Status de um Pedido
+PUT /api/trips/{id}/status
+🔹 Somente admins podem aprovar/cancelar pedidos.
+🔹 O usuário que criou o pedido não pode alterá-lo.
 
-### **3️⃣ Consultar Pedido por ID**
+Body:
 
-**GET** `/api/trips/{id}`
-
-### **4️⃣ Atualizar Status de um Pedido**
-
-**PUT** `/api/trips/{id}/status` **Body:**
-
-```json
+json
+Copiar
+Editar
 {
   "status": "aprovado" ou "cancelado"
 }
-```
+5️⃣ Cancelar Pedido
+DELETE /api/trips/{id}
+🔹 O próprio usuário pode cancelar um pedido desde que a data da viagem esteja a mais de 3 dias.
+🔹 Admins podem cancelar pedidos aprovados com pelo menos 3 dias de antecedência.
+🔹 Se a viagem estiver muito próxima, não pode ser cancelada.
 
-🚨 **Nota:** O usuário que criou o pedido **não pode** aprová-lo ou cancelá-lo.
+📌 Filtros
+1️⃣ Filtrar por Status
+GET /api/trips?status=aprovado
 
----
+2️⃣ Filtrar por Destino
+GET /api/trips?destination=Lisboa
 
-## 📌 **Filtros**
+3️⃣ Filtrar por Período de Tempo
+GET /api/trips?start_date=2025-03-10&end_date=2025-03-30
 
-### **1️⃣ Filtrar por Status**
+📌 Notificações
+Sempre que um pedido for aprovado ou cancelado, uma notificação será enviada ao solicitante do pedido (Banco de Dados e E-mail).
 
-**GET** `/api/trips?status=aprovado`
+1️⃣ Consultar Notificações
+GET /api/notifications
+Headers:
 
-### **2️⃣ Filtrar por Destino**
+makefile
+Copiar
+Editar
+Authorization: Bearer SEU_TOKEN_AQUI
+📌 Testes Automatizados
+O projeto inclui testes automatizados com PHPUnit.
 
-**GET** `/api/trips?destination=Lisboa`
-
-### **3️⃣ Filtrar por Período de Tempo**
-
-**GET** `/api/trips?start_date=2025-03-10&end_date=2025-03-30`
-
----
-
-## 📌 **Notificações**
-
-Sempre que um pedido for **aprovado ou cancelado**, uma notificação será enviada ao solicitante do pedido.
-
----
-
-## 📌 **Testes Automatizados**
-
-Para rodar os testes com PHPUnit:
-
-```sh
+sh
+Copiar
+Editar
 php artisan test
-```
+Testes Implementados:
 
----
+✅ Autenticação
+✅ Criação de Pedidos
+✅ Listagem e Filtros
+✅ Cancelamento
+✅ Permissões de Admin
+✅ Notificações
+📌 Docker
+A aplicação pode ser executada via Docker.
 
-## 📌 **Docker**
-
-A aplicação pode ser executada via **Docker**. Para subir os containers:
-
-```sh
+1️⃣ Criar os Containers
+sh
+Copiar
+Editar
 docker-compose up -d --build
-```
+2️⃣ Criar as Tabelas
+sh
+Copiar
+Editar
+docker-compose exec app php artisan migrate --seed
+3️⃣ Acessar a Aplicação
+A API estará disponível em http://localhost:8000.
 
-Se necessário, copie o `.env.example` para `.env` e configure as credenciais do banco de dados.
+📌 Conclusão
+Este microsserviço segue boas práticas de desenvolvimento com Laravel, garantindo segurança, eficiência e organização.
 
----
+📌 Autor: Arthur Vilefort
 
-## 📌 **Conclusão**
-
-Este microsserviço segue as melhores práticas de desenvolvimento com **Laravel**, incluindo autenticação JWT, validação de dados, tratamento de erros, testes automatizados e execução via Docker.
-
-📌 **Autor:** Arthur Vilefort
-
-🚀 **OnFlyTrips** - Gerenciamento de Pedidos de Viagem Corporativa
+🚀 OnFlyTrips - Gerenciamento de Pedidos de Viagem Corporativa
 
