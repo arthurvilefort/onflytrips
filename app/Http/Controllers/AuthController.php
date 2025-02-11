@@ -50,4 +50,46 @@ class AuthController extends Controller
     {
         return response()->json(Auth::user());
     }
+
+    public function makeAdmin($id)
+    {
+        $adminUser = auth()->user();
+
+        if (!$adminUser || !$adminUser->is_admin) {
+            return response()->json(['error' => 'Apenas admins podem promover usuários.'], 403);
+        }
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['error' => 'Usuário não encontrado.'], 404);
+        }
+
+        $user->is_admin = true;
+        $user->save();
+
+        return response()->json(['message' => 'Usuário promovido a administrador com sucesso.']);
+    }
+
+    public function removeAdmin($id) {
+        $user = User::find($id);
+        
+        if (!$user) {
+            return response()->json(['message' => 'Usuário não encontrado'], 404);
+        }
+    
+        if (!auth()->user()->is_admin) {
+            return response()->json(['message' => 'Apenas administradores podem remover privilégios de admin'], 403);
+        }
+    
+        if ($user->id === auth()->user()->id) {
+            return response()->json(['message' => 'Você não pode remover seu próprio acesso de administrador'], 403);
+        }
+    
+        $user->is_admin = false;
+        $user->save();
+    
+        return response()->json(['message' => 'Usuário rebaixado para usuário comum com sucesso'], 200);
+    }
+    
 }

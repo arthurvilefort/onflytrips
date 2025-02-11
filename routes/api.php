@@ -27,4 +27,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/trips/{id}', [TripController::class, 'show']);
     Route::get('/trips', [TripController::class, 'index']);
     Route::delete('/trips/{id}', [TripController::class, 'cancel']);
+    Route::put('/users/{id}/make-admin', [AuthController::class, 'makeAdmin']);
+    Route::put('/users/{id}/remove-admin', [AuthController::class, 'removeAdmin']);
+    Route::delete('/trips/{id}', [TripController::class, 'cancel']);
+    Route::get('/notifications', function () {
+        return auth()->user()->notifications;
+    }); 
+
 });

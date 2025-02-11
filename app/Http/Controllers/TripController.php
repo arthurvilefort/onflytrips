@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Trip;
 use App\Http\Requests\TripFilterRequest;
+use Carbon\Carbon;
+use App\Notifications\TripStatusUpdated;
+use Illuminate\Support\Facades\Notification;
+
+
 
 class TripController extends Controller
 {
@@ -33,14 +38,18 @@ class TripController extends Controller
         $trip = Trip::findOrFail($id);
 
         if ($trip->user_id === auth()->id()) {
-            return response()->json(['error' => 'Usuário não pode aprovar/cancelar seu próprio pedido.'], 403);
+            return response()->json(['error' => 'Usuário não pode alterar seu próprio pedido.'], 403);
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:aprovado,cancelado',
+            'status' => 'required|in:aprovado,solicitado',
         ]);
 
         $trip->update(['status' => $validated['status']]);
+
+        $user = $trip->user;
+        $user->notify(new TripStatusUpdated($trip));
+
 
         return response()->json($trip);
     }
@@ -51,36 +60,81 @@ class TripController extends Controller
         return response()->json($trip);
     }
 
-    public function index(TripFilterRequest $request)
+    public function index(Request $request)
     {
-        $query = Trip::query()->where('user_id', auth()->id());
+        $query = Trip::query();
 
-        if ($request->destination) {
-            $query->where('destination', 'LIKE', '%' . $request->destination . '%');
+        // Se o usuário não for admin, só vê os próprios pedidos
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', auth()->id());
         }
 
-        if ($request->start_date && $request->end_date) {
-            $query->whereBetween('departure_date', [$request->start_date, $request->end_date]);
-        }
-
-        if ($request->status) {
+        // Filtrar por status
+        if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        return response()->json($query->get());
+        // Filtrar por destino
+        if ($request->has('destination')) {
+            $query->where('destination', 'LIKE', '%' . $request->destination . '%');
+        }
+
+        // Filtrar por intervalo de datas (data de ida)
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('departure_date', [$request->start_date, $request->end_date]);
+        }
+
+        $trips = $query->get();
+
+        return response()->json($trips, 200);
     }
 
 
 
     public function cancel($id)
     {
-        $trip = Trip::findOrFail($id);
+        $trip = Trip::find($id);
 
-        if ($trip->status !== 'aprovado') {
-            return response()->json(['error' => 'Apenas pedidos aprovados podem ser cancelados.'], 400);
+        if (!$trip) {
+            return response()->json(['message' => 'Pedido de viagem não encontrado'], 404);
         }
 
-        $trip->update(['status' => 'cancelado']);
-        return response()->json(['message' => 'Pedido cancelado com sucesso.']);
+        // Verifica se a viagem já está cancelada
+        if ($trip->status === 'cancelado') {
+            return response()->json(['message' => 'Esta viagem já foi cancelada'], 400);
+        }
+
+        $now = now();
+        $tripStartDate = Carbon::parse($trip->departure_date);
+        $daysUntilTrip = $tripStartDate->diffInDays($now);
+
+        // Se a viagem já foi aprovada, só um admin pode cancelar, mas apenas com 3 dias de antecedência
+        if ($trip->status === 'aprovado') {
+            if (!auth()->user()->is_admin) {
+                return response()->json(['message' => 'Apenas administradores podem cancelar viagens já aprovadas'], 403);
+            }
+
+            if ($daysUntilTrip < 3) {
+                return response()->json(['message' => 'Administradores só podem cancelar viagens aprovadas com pelo menos 3 dias de antecedência'], 403);
+            }
+        }
+
+        // Usuário comum pode cancelar apenas suas próprias viagens, e só se faltar 3 dias ou mais
+        if (!auth()->user()->is_admin && $trip->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Você não tem permissão para cancelar esta viagem'], 403);
+        }
+
+        if (!auth()->user()->is_admin && $daysUntilTrip < 3) {
+            return response()->json(['message' => 'Você não pode cancelar a viagem com menos de 3 dias de antecedência'], 403);
+        }
+
+        // Cancela a viagem
+        $trip->status = 'cancelado';
+        $trip->save();
+
+        $user = $trip->user;
+        $user->notify(new TripStatusUpdated($trip));
+
+        return response()->json(['message' => 'Viagem cancelada com sucesso'], 200);
     }
 }
