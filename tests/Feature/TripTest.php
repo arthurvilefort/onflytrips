@@ -27,7 +27,7 @@ class TripTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-                 ->assertJson(['destination' => 'Paris']);
+            ->assertJson(['destination' => 'Paris']);
     }
 
     /** @test */
@@ -43,9 +43,9 @@ class TripTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     '*' => ['id', 'destination', 'departure_date']
-                 ]);
+            ->assertJsonStructure([
+                '*' => ['id', 'destination', 'departure_date']
+            ]);
     }
 
     /** @test */
@@ -62,7 +62,7 @@ class TripTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonFragment(['status' => 'aprovado']);
+            ->assertJsonFragment(['status' => 'aprovado']);
     }
 
     /** @test */
@@ -78,6 +78,59 @@ class TripTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJson(['message' => 'Viagem cancelada com sucesso']);
+            ->assertJson(['message' => 'Viagem cancelada com sucesso']);
+    }
+
+    /** @test */
+    public function only_admins_can_approve_or_cancel_trips()
+    {
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $adminToken = auth()->login($admin);
+    
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'solicitado',
+        ]);
+    
+        $response = $this->putJson("/api/trips/{$trip->id}/status", [
+            'status' => 'aprovado'
+        ], ['Authorization' => "Bearer $adminToken"]);
+    
+        $response->assertStatus(200);
+    
+        $this->assertDatabaseHas('trips', [
+            'id' => $trip->id,
+            'status' => 'aprovado',
+        ]);
+    }
+
+    /** @test */
+    public function only_admins_can_see_all_trips()
+    {
+        $user = User::factory()->create();
+        $token = auth()->login($user);
+
+        $otherUser = User::factory()->create();
+
+        $trip1 = Trip::factory()->create(['user_id' => $user->id]);
+        $trip2 = Trip::factory()->create(['user_id' => $otherUser->id]);
+
+        $response = $this->getJson('/api/trips', ['Authorization' => "Bearer $token"]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['id' => $trip1->id])
+            ->assertJsonMissing(['id' => $trip2->id]); 
+
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $adminToken = auth()->login($admin);
+
+        $response = $this->getJson('/api/trips', ['Authorization' => "Bearer $adminToken"]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2) 
+            ->assertJsonFragment(['id' => $trip1->id])
+            ->assertJsonFragment(['id' => $trip2->id]);
     }
 }
