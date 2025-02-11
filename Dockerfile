@@ -22,8 +22,7 @@ WORKDIR /var/www
 COPY . .
 
 # Define permissões para o diretório de cache e logs do Laravel
-RUN chmod -R 777 storage bootstrap/cache
-
+RUN mkdir -p storage bootstrap/cache && chmod -R 777 storage bootstrap/cache
 # Instala dependências do Laravel
 RUN composer install
 
