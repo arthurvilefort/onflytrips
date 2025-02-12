@@ -41,7 +41,7 @@ Edite as seguintes variáveis no `.env`:
 
 ```ini
 DB_CONNECTION=mysql
-DB_HOST=db
+DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=onflytrips
 DB_USERNAME=root
@@ -67,6 +67,14 @@ MAIL_FROM_NAME="OnFlyTrips"
 php artisan key:generate
 ```
 
+### 5️⃣ Gerar Chave JWT
+
+Execute o seguinte comando para gerar a chave JWT necessária para autenticação:
+
+```sh
+php artisan jwt:secret
+```
+
 ### **5️⃣ Criar as Tabelas no Banco de Dados**
 
 ```sh
@@ -87,6 +95,25 @@ A API estará disponível em **`http://localhost:8000`**.
 
 A API usa autenticação JWT para proteger as rotas. Utilize o **token** retornado ao fazer login para acessar as rotas protegidas.
 
+## 📌 **Docker**
+
+A aplicação pode ser executada via **Docker**.
+
+### **1️⃣ Criar os Containers**
+```sh
+docker-compose up -d --build
+```
+
+### **2️⃣ Criar as Tabelas**
+```sh
+docker-compose exec app php artisan migrate --seed
+```
+
+### **3️⃣ Acessar a Aplicação**
+A API estará disponível em **`http://localhost:8000`**.
+
+---
+## 📌 **Acesso**
 ### **1️⃣ Registrar Usuário**
 
 **POST** `/api/register`
@@ -244,24 +271,6 @@ php artisan test
 
 ---
 
-## 📌 **Docker**
-
-A aplicação pode ser executada via **Docker**.
-
-### **1️⃣ Criar os Containers**
-```sh
-docker-compose up -d --build
-```
-
-### **2️⃣ Criar as Tabelas**
-```sh
-docker-compose exec app php artisan migrate --seed
-```
-
-### **3️⃣ Acessar a Aplicação**
-A API estará disponível em **`http://localhost:8000`**.
-
----
 
 ## 📌 **Conclusão**
 
